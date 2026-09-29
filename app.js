@@ -454,13 +454,15 @@ async function scheduleServer() {
   const minutes = clamp(num('server.minutes', 3), 0.5, 60);
   const first = clamp(num('server.firstDelay', 10), 3, 600);
   const btn = $('#btnSchedule'); if (btn) { btn.disabled = true; btn.textContent = 'Programmation…'; }
+  const orderNext = cfg.order.next;
+  let items = [];
   try {
     const sub = await getSubscription();
     const span = Math.max(minutes * 60 - first, 0);
     const offsets = [0, ...Array.from({ length: count - 1 }, () => Math.random() * span)].sort((a, b) => a - b);
     for (let i = 1; i < offsets.length; i++) offsets[i] = Math.max(offsets[i], offsets[i - 1] + 3);
     const now = Date.now();
-    const items = offsets.map((o) => {
+    items = offsets.map((o) => {
       const delay = Math.round((first + o) * 1000);
       const n = generate(null, now + delay);
       n.sched = true;
@@ -476,11 +478,22 @@ async function scheduleServer() {
     toast(`🔒 Verrouille ton iPhone : 1re notif dans ${Math.round(first)} s`);
   } catch (e) {
     // annule les notifications générées mais non programmées
-    state.history = state.history.filter((h) => !(h.sched && h.at > Date.now() && !(state.job && state.job.items.some((i) => i.id === h.id))));
-    saveState();
+    rollback(items);
+    cfg.order.next = orderNext; saveCfg(); bindForm();
     toast('Échec de la programmation : ' + e.message);
   }
   renderServer(); renderStats(); renderHistory();
+}
+
+/** Retire des notifications programmées (non encore arrivées) de l'historique et des stats. */
+function rollback(items) {
+  const ids = new Set(items.map((i) => i.id));
+  for (const it of items) {
+    if (it.amount) { state.today.revenue = Math.max(0, Math.round((state.today.revenue - it.amount) * 100) / 100); state.today.orders = Math.max(0, state.today.orders - 1); }
+    if (cfg.badge) state.badge = Math.max(0, state.badge - 1);
+  }
+  state.history = state.history.filter((h) => !ids.has(h.id));
+  saveState();
 }
 
 async function cancelServer() {
@@ -488,13 +501,7 @@ async function cancelServer() {
   try { const sub = await (swReg || (await navigator.serviceWorker.ready)).pushManager.getSubscription(); if (sub) await sub.unsubscribe(); } catch {}
   if (state.job) {
     const now = Date.now();
-    for (const it of state.job.items) {
-      if (it.at <= now) continue;
-      if (it.amount) { state.today.revenue = Math.max(0, Math.round((state.today.revenue - it.amount) * 100) / 100); state.today.orders = Math.max(0, state.today.orders - 1); }
-      if (cfg.badge) state.badge = Math.max(0, state.badge - 1);
-    }
-    const future = new Set(state.job.items.filter((i) => i.at > now).map((i) => i.id));
-    state.history = state.history.filter((h) => !future.has(h.id));
+    rollback(state.job.items.filter((i) => i.at > now));
     state.job = null; saveState();
   }
   toast('Programmation annulée');
