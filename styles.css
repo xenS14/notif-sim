@@ -233,3 +233,6 @@ input[type=range] { width: 100%; margin-top: 10px; accent-color: var(--accent); 
 #toast.show { opacity: 1; transform: translate(-50%, 0); }
 .form .row { margin-bottom: 12px; align-items: flex-end; }
 .form .row > label { margin-bottom: 0; }
+.icon-row { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+.icon-row img { width: 64px; height: 64px; border-radius: 15px; object-fit: cover; box-shadow: 0 4px 14px rgba(0,0,0,.3); }
+.icon-row label { margin: 0 0 4px !important; }

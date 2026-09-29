@@ -91,6 +91,7 @@ const WALLPAPERS = {
 const DEFAULTS = {
   v: 1,
   lang: 'fr',
+  app: { name: 'Notif Sim' },
   store: { name: 'Ma Boutique', channel: TEMPLATES.fr.channel, money: 'EUR:fr-FR' },
   order: { next: 1001 },
   amounts: { min: 24, max: 149, psy: true, useProductPrices: true, maxItems: 3 },
@@ -117,6 +118,9 @@ const DEFAULTS = {
 let cfg = deepMerge(clone(DEFAULTS), store('ns.cfg') || {});
 let state = deepMerge({ today: { date: todayKey(), revenue: 0, orders: 0 }, history: [], badge: 0, job: null }, store('ns.state') || {});
 let wallpaperData = store('ns.wall') || '';
+let iconData = store('ns.icon') || '';
+let soundData = store('ns.sound') || '';
+const iconSrc = () => iconData || 'icons/icon-192.png';
 const saveCfg = () => store('ns.cfg', cfg);
 const saveState = () => store('ns.state', state);
 
@@ -271,10 +275,22 @@ function noise(c, t, dur, gain, freq, q = 1, type = 'bandpass') {
   g.gain.setValueAtTime(gain, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
   s.connect(f).connect(g).connect(master); s.start(t);
 }
+let customBuf = null;
+async function customBuffer(c) {
+  if (customBuf || !soundData) return customBuf;
+  const ab = await (await fetch(soundData)).arrayBuffer();
+  customBuf = await new Promise((ok, ko) => c.decodeAudioData(ab, ok, ko));
+  return customBuf;
+}
 function playSound(kind = cfg.sound.kind) {
   const c = audio(); if (!c) return;
   master.gain.value = clamp(num('sound.volume', 0.8), 0, 1);
   const t = c.currentTime + 0.02;
+  if (kind === 'custom') {
+    if (!soundData) return playSound('chaching');
+    customBuffer(c).then((b) => { const s = c.createBufferSource(); s.buffer = b; s.connect(master); s.start(); }).catch(() => toast('Son illisible'));
+    return;
+  }
   if (kind === 'chaching') {
     // « cha » : clic mécanique de caisse
     noise(c, t, 0.07, 0.9, 2500, 0.8); tone(c, 190, t, 0.06, 0.35, 'square', 90);
@@ -306,7 +322,7 @@ async function showSystem(n) {
   if (lockOpen && cfg.lock.suppressSystem) return false;
   try {
     const reg = swReg || (await navigator.serviceWorker.ready);
-    await reg.showNotification(n.title, { body: n.body, tag: n.id, icon: 'icons/icon-192.png', badge: 'icons/icon-96.png', data: { id: n.id } });
+    await reg.showNotification(n.title, { body: n.body, tag: n.id, icon: iconSrc(), badge: 'icons/icon-96.png', data: { id: n.id } });
     return true;
   } catch (e) {
     console.warn('showNotification', e);
@@ -317,7 +333,7 @@ async function showSystem(n) {
 function notifEl(n, timeLabel) {
   const el = document.createElement('div');
   el.className = 'ios-notif';
-  el.innerHTML = `<img src="icons/icon-96.png" alt=""><div class="c"><div class="h"><b>${esc(n.title)}</b><span data-at="${n.at}">${esc(timeLabel)}</span></div><p>${esc(n.body)}</p></div>`;
+  el.innerHTML = `<img src="${esc(iconSrc())}" alt=""><div class="c"><div class="h"><b>${esc(n.title)}</b><span data-at="${n.at}">${esc(timeLabel)}</span></div><p>${esc(n.body)}</p></div>`;
   return el;
 }
 
@@ -552,14 +568,14 @@ function renderOnboarding() {
   if (isIOS && !isStandalone()) {
     box.innerHTML = `<div class="card onb"><h2>📲 Installe l'app sur ton iPhone</h2>
       <p class="hint">iOS n'autorise les notifications que pour les apps ajoutées à l'écran d'accueil (iOS 16.4 ou plus).</p>
-      <ol><li>Ouvre cette page dans <b>Safari</b></li><li>Touche <b>Partager</b> ${SHARE_ICO}</li><li>Choisis <b>« Sur l'écran d'accueil »</b> puis <b>Ajouter</b></li><li>Ouvre <b>Notif Sim</b> depuis ton écran d'accueil</li></ol>
+      <ol><li><i>(Facultatif)</i> Choisis l'icône et le nom de l'app dans <b>Réglages</b></li><li>Ouvre cette page dans <b>Safari</b></li><li>Touche <b>Partager</b> ${SHARE_ICO}</li><li>Choisis <b>« Sur l'écran d'accueil »</b> puis <b>Ajouter</b></li><li>Ouvre <b>${esc(cfg.app.name || 'Notif Sim')}</b> depuis ton écran d'accueil</li></ol>
       <p class="hint small">En attendant, tout fonctionne ici avec des bannières simulées.</p></div>`;
   } else if (notifSupported() && Notification.permission === 'default') {
     box.innerHTML = `<div class="card onb"><h2>🔔 Active les notifications</h2><p class="hint">Pour recevoir de vraies notifications iOS (écran verrouillé, centre de notifications, son).</p>
       <button class="btn primary full" style="margin:12px 0 0" id="btnPerm">Autoriser les notifications</button></div>`;
     $('#btnPerm').onclick = askPermission;
   } else if (notifSupported() && Notification.permission === 'denied') {
-    box.innerHTML = `<div class="card onb"><h2>🔕 Notifications bloquées</h2><p class="hint">Va dans <b>Réglages › Notifications › Notif Sim</b> et active <b>Autoriser les notifications</b>, puis rouvre l'app.</p></div>`;
+    box.innerHTML = `<div class="card onb"><h2>🔕 Notifications bloquées</h2><p class="hint">Va dans <b>Réglages › Notifications › ${esc(cfg.app.name || 'Notif Sim')}</b> et active <b>Autoriser les notifications</b>, puis rouvre l'app.</p></div>`;
   } else box.innerHTML = '';
 }
 
@@ -732,6 +748,7 @@ function onCfgChange(k) {
   if (k === 'lock.wallpaper') applyWallpaper();
   if (k === 'server.url') { clearTimeout(onCfgChange.t); onCfgChange.t = setTimeout(checkServer, 800); }
   if (k === 'badge' && !cfg.badge) clearBadge();
+  if (k === 'app.name') { applyAppearance(); renderOnboarding(); }
 }
 function clearBadge() {
   state.badge = 0; saveState();
@@ -755,6 +772,40 @@ function importCfg(file) {
     catch { toast('Fichier invalide'); }
   };
   r.readAsText(file);
+}
+
+/* ---------- icône & nom de l'app */
+function applyAppearance() {
+  const name = (cfg.app.name || 'Notif Sim').trim() || 'Notif Sim';
+  $('link[rel="apple-touch-icon"]').href = iconData || 'icons/icon-180.png';
+  $('meta[name="apple-mobile-web-app-title"]').content = name;
+  document.title = name;
+  $('#view-home h1').textContent = name;
+  $('#iconPreview').src = iconData || 'icons/icon-180.png';
+  const info = $('#soundInfo'); if (info) info.textContent = soundData ? '✅ Son importé' : '';
+}
+function loadIcon(file) {
+  const img = new Image();
+  img.onload = () => {
+    const S = 180, c = document.createElement('canvas'); c.width = c.height = S;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, S, S);
+    const k = Math.max(S / img.width, S / img.height), w = img.width * k, h = img.height * k;
+    x.drawImage(img, (S - w) / 2, (S - h) / 2, w, h);
+    iconData = c.toDataURL('image/png'); store('ns.icon', iconData);
+    URL.revokeObjectURL(img.src); applyAppearance();
+    toast(isStandalone() ? 'Icône enregistrée — réinstalle l’app depuis Safari pour l’appliquer' : 'Icône prête ✅ Ajoute maintenant l’app à l’écran d’accueil');
+  };
+  img.onerror = () => toast('Image illisible');
+  img.src = URL.createObjectURL(file);
+}
+function loadSound(file) {
+  if (file.size > 1.5e6) { toast('Son trop lourd (1,5 Mo max)'); return; }
+  const r = new FileReader();
+  r.onload = () => {
+    soundData = r.result; customBuf = null; store('ns.sound', soundData);
+    cfg.sound.kind = 'custom'; saveCfg(); bindForm(); applyAppearance(); playSound('custom'); toast('Son importé ✅');
+  };
+  r.readAsDataURL(file);
 }
 
 /* ---------- écran de verrouillage simulé */
@@ -812,7 +863,7 @@ function showView(name) {
 }
 
 function refreshAll() {
-  renderPills(); renderOnboarding(); renderStats(); renderQuick(); renderAuto(); renderHistory(); renderServer(); renderVars(); bindForm(); applyWallpaper();
+  renderPills(); renderOnboarding(); renderStats(); renderQuick(); renderAuto(); renderHistory(); renderServer(); renderVars(); bindForm(); applyWallpaper(); applyAppearance();
   if ($('#view-types').classList.contains('active')) renderTypes();
 }
 
@@ -857,6 +908,9 @@ function wire() {
   $('#btnResetDay').onclick = () => { state.today = { date: todayKey(), revenue: 0, orders: 0 }; saveState(); renderStats(); toast('Stats du jour remises à zéro'); };
   $('#btnExport').onclick = exportCfg;
   $('#importFile').onchange = (e) => { if (e.target.files[0]) importCfg(e.target.files[0]); e.target.value = ''; };
+  $('#iconFile').onchange = (e) => { if (e.target.files[0]) loadIcon(e.target.files[0]); e.target.value = ''; };
+  $('#btnIconReset').onclick = () => { iconData = ''; try { localStorage.removeItem('ns.icon'); } catch {} applyAppearance(); toast('Icône par défaut'); };
+  $('#soundFile').onchange = (e) => { if (e.target.files[0]) loadSound(e.target.files[0]); e.target.value = ''; };
   $('#wallFile').onchange = (e) => { if (e.target.files[0]) loadWallpaper(e.target.files[0]); e.target.value = ''; };
   $('#btnReset').onclick = () => {
     if (!confirm('Réinitialiser tous les réglages ? (l’historique est conservé)')) return;

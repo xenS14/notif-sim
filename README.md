@@ -15,6 +15,10 @@ Web app installable (PWA) : pas besoin de Mac, d'Xcode ni de l'App Store.
 ## Fonctionnalités
 
 - **Vraies notifications iOS** (bannière, centre de notifications, son système) + pastille sur l'icône
+- **Icône et nom de l'app personnalisables** (Réglages → Icône & nom) : l'icône choisie est celle affichée sur les notifications.
+  À faire **dans Safari avant** d'ajouter l'app à l'écran d'accueil.
+- **Son personnalisé** : importe ton propre fichier audio, joué quand l'app est ouverte
+  (les notifications iOS utilisent toujours le son système : limite d'Apple pour les web apps)
 - **Types de notifications** : nouvelle commande, nouveau client, avis, versement, stock faible, record du jour, et tes propres types
 - **Textes modifiables** avec variables : `{store}` `{order}` `{amount}` `{items}` `{product}` `{customer}` `{city}`…
 - **Modèles FR / EN** en un clic

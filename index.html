@@ -114,6 +114,19 @@
         <label class="inline">Prochain n° de commande<input data-k="order.next" type="number" inputmode="numeric" min="1"></label>
       </div>
 
+      <div class="group-title">Icône & nom de l'app</div>
+      <div class="card form" id="appearance">
+        <div class="icon-row">
+          <img id="iconPreview" src="icons/icon-180.png" alt="Icône">
+          <div>
+            <label class="file">Choisir une image…<input type="file" accept="image/*" id="iconFile"></label>
+            <button class="link" id="btnIconReset" style="padding:4px 0">Icône par défaut</button>
+          </div>
+        </div>
+        <label>Nom sous l'icône<input data-k="app.name" type="text" maxlength="30"></label>
+        <p class="hint small">C'est cette icône qui apparaît sur les notifications iOS. Choisis-la <b>dans Safari, avant</b> d'ajouter l'app à l'écran d'accueil. Si l'app est déjà installée : supprime-la, reviens sur le site dans Safari, choisis l'icône, puis réinstalle-la.</p>
+      </div>
+
       <div class="group-title">Montants</div>
       <div class="card form">
         <div class="row gap">
@@ -154,10 +167,14 @@
             <option value="ding">Ding</option>
             <option value="tritone">Tri-ton</option>
             <option value="pop">Pop</option>
+            <option value="custom">Mon son (importé)</option>
           </select>
         </label>
         <label>Volume<input data-k="sound.volume" type="range" min="0" max="1" step="0.05"></label>
+        <label class="file">Importer un son (mp3, m4a, wav)…<input type="file" accept="audio/*" id="soundFile"></label>
+        <p class="hint small" id="soundInfo" style="margin:-6px 0 12px"></p>
         <button class="btn ghost small" id="btnTestSound">Tester le son</button>
+        <p class="hint small" style="margin:0 0 12px">Ce son est joué par l'app quand elle est ouverte. Les notifications iOS, elles, utilisent toujours le son de notification de l'iPhone (limite d'Apple pour les web apps).</p>
         <label class="switch">Vraies notifications iOS<input data-k="system" type="checkbox"><i></i></label>
         <label>Bannière dans l'app
           <select data-k="inapp">
