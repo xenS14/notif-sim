@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <title>Notif Sim</title>
+  <meta name="description" content="Simulateur de notifications de boutique en ligne">
+  <meta name="theme-color" content="#0b0f0d">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Notif Sim">
+  <link rel="apple-touch-icon" href="icons/icon-180.png">
+  <link rel="icon" type="image/png" href="icons/icon-96.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <!-- ============ ACCUEIL ============ -->
+    <section class="view active" id="view-home">
+      <header class="top">
+        <div>
+          <p class="eyebrow" id="storeEyebrow">Ma Boutique</p>
+          <h1>Notif Sim</h1>
+        </div>
+        <div class="status" id="statusPills"></div>
+      </header>
+
+      <div id="onboarding"></div>
+
+      <div class="card hero">
+        <div class="stats">
+          <div><span class="label">CA du jour</span><strong id="statRevenue">0 €</strong></div>
+          <div><span class="label">Commandes</span><strong id="statOrders">0</strong></div>
+          <div><span class="label">Panier moyen</span><strong id="statAvg">—</strong></div>
+        </div>
+        <button class="btn primary big" id="btnSend">
+          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/></svg>
+          Envoyer une notification
+        </button>
+        <div class="chips" id="quickTypes"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Simulation automatique</h2>
+          <span class="tag" id="autoTag">Arrêtée</span>
+        </div>
+        <div class="seg" id="patternSeg">
+          <button data-p="realistic">Réaliste</button>
+          <button data-p="regular">Régulier</button>
+          <button data-p="burst">Rafales</button>
+          <button data-p="rush">Rush 🔥</button>
+        </div>
+        <p class="hint" id="patternHint"></p>
+        <div class="auto-row">
+          <div class="countdown">
+            <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19" class="track"/><circle cx="22" cy="22" r="19" class="prog" id="cdRing"/></svg>
+            <span id="cdText">—</span>
+          </div>
+          <div class="auto-meta">
+            <div><span class="label">Envoyées</span><strong id="autoSent">0</strong></div>
+            <div><span class="label">Prochaine</span><strong id="autoNext">—</strong></div>
+          </div>
+          <button class="btn primary" id="btnAuto">Démarrer</button>
+        </div>
+        <p class="hint small">L'app doit rester ouverte à l'écran (iOS met en pause les apps web en arrière-plan). Utilise le <b>mode écran verrouillé</b> ci-dessous pour recevoir des notifications téléphone verrouillé.</p>
+      </div>
+
+      <div class="card" id="serverCard">
+        <div class="card-head">
+          <h2>Mode écran verrouillé</h2>
+          <span class="tag" id="serverTag">…</span>
+        </div>
+        <div id="serverBody"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Historique</h2>
+          <button class="link" id="btnClearHistory">Effacer</button>
+        </div>
+        <ul class="history" id="history"></ul>
+      </div>
+    </section>
+
+    <!-- ============ TYPES ============ -->
+    <section class="view" id="view-types">
+      <header class="top"><div><p class="eyebrow">Contenu</p><h1>Notifications</h1></div></header>
+      <div class="card">
+        <p class="hint">Active les types, règle leur fréquence relative et personnalise le texte. Variables disponibles (touche pour copier) :</p>
+        <div class="vars" id="varsList"></div>
+        <div class="row gap">
+          <button class="btn ghost small" id="btnTplFr">Modèles FR</button>
+          <button class="btn ghost small" id="btnTplEn">Modèles EN</button>
+        </div>
+      </div>
+      <div id="typesList"></div>
+      <button class="btn ghost full" id="btnAddType">+ Ajouter un type personnalisé</button>
+    </section>
+
+    <!-- ============ RÉGLAGES ============ -->
+    <section class="view" id="view-settings">
+      <header class="top"><div><p class="eyebrow">Paramètres</p><h1>Réglages</h1></div></header>
+
+      <div class="group-title">Boutique</div>
+      <div class="card form">
+        <label>Nom de la boutique<input data-k="store.name" type="text"></label>
+        <label>Canal de vente<input data-k="store.channel" type="text"></label>
+        <label>Devise
+          <select data-k="store.currency" id="selCurrency"></select>
+        </label>
+        <label class="inline">Prochain n° de commande<input data-k="order.next" type="number" inputmode="numeric" min="1"></label>
+      </div>
+
+      <div class="group-title">Montants</div>
+      <div class="card form">
+        <div class="row gap">
+          <label>Minimum<input data-k="amounts.min" type="number" inputmode="decimal" min="0" step="0.01"></label>
+          <label>Maximum<input data-k="amounts.max" type="number" inputmode="decimal" min="0" step="0.01"></label>
+        </div>
+        <label class="switch">Utiliser les prix des produits<input data-k="amounts.useProductPrices" type="checkbox"><i></i></label>
+        <label class="switch">Prix psychologiques (,90 / ,99)<input data-k="amounts.psy" type="checkbox"><i></i></label>
+        <label>Articles max par commande<input data-k="amounts.maxItems" type="number" inputmode="numeric" min="1" max="10"></label>
+      </div>
+
+      <div class="group-title">Produits <span class="muted">— un par ligne, « Nom | prix » (prix facultatif)</span></div>
+      <div class="card form"><textarea data-k="products" rows="7" spellcheck="false"></textarea></div>
+
+      <div class="group-title">Clients</div>
+      <div class="card form">
+        <label>Noms (un par ligne)<textarea data-k="customers" rows="6" spellcheck="false"></textarea></label>
+        <label>Villes (une par ligne)<textarea data-k="cities" rows="4" spellcheck="false"></textarea></label>
+      </div>
+
+      <div class="group-title">Rythme de la simulation</div>
+      <div class="card form">
+        <div class="row gap">
+          <label>Intervalle min (s)<input data-k="rhythm.min" type="number" inputmode="numeric" min="2"></label>
+          <label>Intervalle max (s)<input data-k="rhythm.max" type="number" inputmode="numeric" min="2"></label>
+        </div>
+        <label>Notifications par rafale<input data-k="rhythm.burstCount" type="number" inputmode="numeric" min="2" max="20"></label>
+        <label>S'arrêter après (0 = jamais)<input data-k="rhythm.stopAfter" type="number" inputmode="numeric" min="0"></label>
+        <label class="switch">Garder l'écran allumé<input data-k="rhythm.wakeLock" type="checkbox"><i></i></label>
+      </div>
+
+      <div class="group-title">Son & affichage</div>
+      <div class="card form">
+        <label class="switch">Son dans l'app<input data-k="sound.enabled" type="checkbox"><i></i></label>
+        <label>Type de son
+          <select data-k="sound.kind">
+            <option value="chaching">Cha-ching 💰</option>
+            <option value="ding">Ding</option>
+            <option value="tritone">Tri-ton</option>
+            <option value="pop">Pop</option>
+          </select>
+        </label>
+        <label>Volume<input data-k="sound.volume" type="range" min="0" max="1" step="0.05"></label>
+        <button class="btn ghost small" id="btnTestSound">Tester le son</button>
+        <label class="switch">Vraies notifications iOS<input data-k="system" type="checkbox"><i></i></label>
+        <label>Bannière dans l'app
+          <select data-k="inapp">
+            <option value="auto">Auto (si pas de vraie notif)</option>
+            <option value="always">Toujours</option>
+            <option value="never">Jamais</option>
+          </select>
+        </label>
+        <p class="hint small" style="margin:-4px 0 12px">Si tu ne vois rien quand l'app est ouverte, choisis « Toujours ».</p>
+        <label class="switch">Pastille sur l'icône (badge)<input data-k="badge" type="checkbox"><i></i></label>
+        <button class="btn ghost small" id="btnClearBadge">Remettre la pastille à zéro</button>
+      </div>
+
+      <div class="group-title">Écran de verrouillage simulé</div>
+      <div class="card form">
+        <label>Fond d'écran
+          <select data-k="lock.wallpaper" id="selWallpaper"></select>
+        </label>
+        <label class="file">Importer une photo…<input type="file" accept="image/*" id="wallFile"></label>
+        <label class="switch">Heure au format 24 h<input data-k="lock.h24" type="checkbox"><i></i></label>
+        <label class="switch">Masquer les vraies notifs pendant l'aperçu<input data-k="lock.suppressSystem" type="checkbox"><i></i></label>
+      </div>
+
+      <div class="group-title">Serveur push (mode écran verrouillé)</div>
+      <div class="card form">
+        <label>URL du serveur<input data-k="server.url" type="url" placeholder="auto (même site)" autocapitalize="off" autocorrect="off"></label>
+        <p class="hint small">Laisse vide si l'app est hébergée sur Vercel avec le dossier <code>api/</code>. Sinon colle l'adresse de ton déploiement Vercel (ex. <code>https://notif-sim.vercel.app</code>).</p>
+        <button class="btn ghost small" id="btnRecheck">Vérifier la connexion</button>
+      </div>
+
+      <div class="group-title">Données</div>
+      <div class="card form">
+        <button class="btn ghost" id="btnResetDay">Remettre les stats du jour à zéro</button>
+        <button class="btn ghost" id="btnExport">Exporter la configuration</button>
+        <label class="file btn ghost">Importer une configuration<input type="file" accept="application/json,.json" id="importFile"></label>
+        <button class="btn danger" id="btnReset">Réinitialiser tous les réglages</button>
+      </div>
+      <p class="foot">Notif Sim · simulateur, aucune donnée n'est envoyée à une boutique.</p>
+    </section>
+
+    <!-- ============ BARRE D'ONGLETS ============ -->
+    <nav class="tabbar">
+      <button data-view="home" class="active">
+        <svg viewBox="0 0 24 24"><path d="M12 22a2.5 2.5 0 0 0 2.45-2h-4.9A2.5 2.5 0 0 0 12 22Zm7-6V11a7 7 0 0 0-5.5-6.84V3.5a1.5 1.5 0 0 0-3 0v.66A7 7 0 0 0 5 11v5l-2 2v1h18v-1l-2-2Z"/></svg>
+        <span>Accueil</span>
+      </button>
+      <button data-action="lock">
+        <svg viewBox="0 0 24 24"><path d="M17 3H7a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3V6a3 3 0 0 0-3-3Zm-5 16.2a1.2 1.2 0 1 1 0-2.4 1.2 1.2 0 0 1 0 2.4ZM18 15H6V6a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1Z"/></svg>
+        <span>Aperçu</span>
+      </button>
+      <button data-view="types">
+        <svg viewBox="0 0 24 24"><path d="M4 5h16v2H4zm0 6h16v2H4zm0 6h10v2H4z"/></svg>
+        <span>Contenu</span>
+      </button>
+      <button data-view="settings">
+        <svg viewBox="0 0 24 24"><path d="M19.4 13a7.6 7.6 0 0 0 0-2l2.1-1.6-2-3.5-2.5 1a7.4 7.4 0 0 0-1.7-1L15 3.3h-4l-.4 2.6a7.4 7.4 0 0 0-1.7 1l-2.5-1-2 3.5L6.6 11a7.6 7.6 0 0 0 0 2l-2.1 1.6 2 3.5 2.5-1a7.4 7.4 0 0 0 1.7 1l.4 2.6h4l.4-2.6a7.4 7.4 0 0 0 1.7-1l2.5 1 2-3.5ZM13 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" transform="translate(-1 0)"/></svg>
+        <span>Réglages</span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- Bannière in-app (style iOS) -->
+  <div id="banners" aria-live="polite"></div>
+
+  <!-- Écran de verrouillage simulé -->
+  <div id="lock" hidden>
+    <div class="lock-bg" id="lockBg"></div>
+    <div class="lock-status"><span id="lockCarrier"></span><span class="lock-icons">
+      <svg viewBox="0 0 18 12" width="18"><rect x="0" y="8" width="3" height="4" rx="1"/><rect x="5" y="5.5" width="3" height="6.5" rx="1"/><rect x="10" y="3" width="3" height="9" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></svg>
+      <svg viewBox="0 0 16 12" width="16"><path d="M8 2.4c2.2 0 4.2.9 5.7 2.3l1.2-1.2A9.7 9.7 0 0 0 8 .7 9.7 9.7 0 0 0 1.1 3.5l1.2 1.2A8 8 0 0 1 8 2.4Zm0 3.4c1.3 0 2.5.5 3.4 1.4l1.2-1.2a6.4 6.4 0 0 0-9.2 0l1.2 1.2c.9-.9 2.1-1.4 3.4-1.4Zm0 3.4c-.5 0-.9.2-1.2.5L8 11l1.2-1.3c-.3-.3-.7-.5-1.2-.5Z"/></svg>
+      <span class="batt"><i></i></span></span></div>
+    <div class="lock-top">
+      <svg class="padlock" viewBox="0 0 24 24" width="16"><path d="M17 9V7A5 5 0 0 0 7 7v2a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2ZM9 7a3 3 0 0 1 6 0v2H9Z"/></svg>
+      <div class="lock-date" id="lockDate"></div>
+      <div class="lock-time" id="lockTime"></div>
+    </div>
+    <div class="lock-stack" id="lockStack"></div>
+    <div class="lock-bottom">
+      <span class="round"><svg viewBox="0 0 24 24"><path d="M7 2h10v3.2l-2.6 3.3V20a2 2 0 0 1-2 2h-.8a2 2 0 0 1-2-2V8.5L7 5.2Zm5 8.3a1.1 1.1 0 1 0 0 2.2 1.1 1.1 0 0 0 0-2.2Z"/></svg></span>
+      <span class="round"><svg viewBox="0 0 24 24"><path d="M9 4 7.5 6H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-2.5L15 4Zm3 4a5 5 0 1 1 0 10 5 5 0 0 1 0-10Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Z"/></svg></span>
+    </div>
+    <div class="home-ind"></div>
+    <div class="lock-ctrl" id="lockCtrl">
+      <button id="lockSend">+ Notif</button>
+      <button id="lockAuto">Auto</button>
+      <button id="lockClear">Vider</button>
+      <button id="lockClose">Fermer</button>
+    </div>
+    <p class="lock-tip" id="lockTip">Touche l'écran pour afficher/masquer les commandes</p>
+  </div>
+
+  <div id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
